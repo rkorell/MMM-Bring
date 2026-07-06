@@ -1,27 +1,26 @@
 {
   "name": "mmm-bring",
-  "version": "1.0.0",
-  "description": "A module for MagicMirror 2 displaying your Bring! shopping list.",
+  "version": "2.0.0",
+  "description": "A MagicMirror² module displaying your Bring! shopping list, grouped by category like the app.",
   "main": "MMM-Bring.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/werthdavid/MMM-Bring.git"
+    "url": "git+https://github.com/rkorell/MMM-Bring.git"
   },
   "keywords": [
-    "magic",
-    "mirror",
-    "2",
+    "magicmirror",
+    "magicmirror2",
     "bring",
+    "shopping-list",
     "module"
   ],
-  "author": "David Werth",
+  "author": "Dr. Ralf Korell (fork), David Werth (original)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/werthdavid/MMM-Bring/issues"
+    "url": "https://github.com/rkorell/MMM-Bring/issues"
   },
-  "homepage": "https://github.com/werthdavid/MMM-Bring#readme",
-  "dependencies": {
-    "axios": "^0.21.2",
-    "data-store": "^3.1.0"
+  "homepage": "https://github.com/rkorell/MMM-Bring#readme",
+  "engines": {
+    "node": ">=18"
   }
 }

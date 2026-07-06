@@ -1,3 +1,12 @@
+/* MagicMirror Module: MMM-Bring — MMM-Bring.js (frontend)
+ *
+ * Pure display: sends its config once and renders whatever the backend delivers.
+ * Fork by Dr. Ralf Korell — original by David Werth.
+ *
+ * # Modified: 2026-07-06 21:41 - v2.0.0: pure-display frontend, useSections render, batch mutate.
+ * # Modified: 2026-07-06 22:44 - QA: register dropdown-close listener once (no leak); list names via textContent.
+ * # Modified: 2026-07-06 23:06 - QA2: set background via style.backgroundColor; strict equality.
+ */
 /*jshint esversion: 6 */
 Module.register("MMM-Bring", {
 
@@ -15,7 +24,9 @@ Module.register("MMM-Bring", {
         locale: "de-DE",
         useKeyboard: false,
         customTitle: undefined,
-        listDropdown: true
+        listDropdown: true,
+        // "off" = raw list, "on" = sort by section (no headers), "show" = grouped with headers
+        useSections: "on"
     },
 
     getStyles: function () {
@@ -23,11 +34,19 @@ Module.register("MMM-Bring", {
     },
 
     start: function () {
-        this.sendSocketNotification("GET_LIST", this.config);
-        setInterval(() => {
-            this.sendSocketNotification("GET_LIST", this.config);
-        }, this.config.updateInterval * 60 * 1000);
-        this.lists = ["Liste1", "Liste2"];
+        this.currentList = null;
+        this.lists = [];
+        this.sendSocketNotification("START_BRING_POLL", this.config);
+        // Close the list dropdown on any outside click. Registered ONCE here — attaching this
+        // inside getDom() would add a new listener on every re-render (leak).
+        document.addEventListener("click", (event) => {
+            if (!event.target.matches(".bring-titleBtn")) {
+                const dropDown = document.getElementById("bring-dropItems");
+                if (dropDown && dropDown.classList.contains("show")) {
+                    dropDown.classList.remove("show");
+                }
+            }
+        });
     },
 
     createDropDown: function () {
@@ -36,7 +55,7 @@ Module.register("MMM-Bring", {
         const titleBtn = document.createElement("input");
         titleBtn.setAttribute("type", "button");
         titleBtn.className = "bring-titleBtn bright";
-        titleBtn.value = this.config.listName + " \u2BC6";
+        titleBtn.value = this.config.listName + " ⯆";
         titleBtn.addEventListener("click", function () {
             document.getElementById("bring-dropItems").classList.toggle("show");
         });
@@ -48,10 +67,10 @@ Module.register("MMM-Bring", {
         for (var i = 0; i < this.lists.length; i++) {
             var dropItem = document.createElement("div");
             dropItem.className = "bring-dropItem";
-            dropItem.innerHTML = this.lists[i].name;
+            dropItem.textContent = this.lists[i].name;
             dropItem.addEventListener("click", function () {
-                self.config.listName = this.innerHTML;
-                self.sendSocketNotification("GET_LIST", self.config);
+                self.config.listName = this.textContent;
+                self.sendSocketNotification("START_BRING_POLL", self.config);
             });
             dropItems.appendChild(dropItem);
         }
@@ -61,10 +80,50 @@ Module.register("MMM-Bring", {
         return drop;
     },
 
+    // Build a single item card. `markPurchased` = what a click means for THIS item.
+    buildItemEl: function (item, color, markPurchased) {
+        const el = document.createElement("div");
+        el.className = "bring-list-item-content";
+        el.style.backgroundColor = color;
+        el.onclick = () => this.itemClicked(item, markPurchased);
+
+        const upperPartContainer = document.createElement("div");
+        upperPartContainer.className = "bring-list-item-upper-part-container";
+        const imageContainer = document.createElement("div");
+        imageContainer.className = "bring-list-item-image-container";
+        const image = document.createElement("img");
+        image.src = item.imageSrc;
+        imageContainer.appendChild(image);
+        upperPartContainer.appendChild(imageContainer);
+        el.appendChild(upperPartContainer);
+
+        const itemTextContainer = document.createElement("div");
+        itemTextContainer.className = "bring-list-item-text-container";
+        const itemName = document.createElement("span");
+        itemName.className = "bring-list-item-name";
+        itemName.innerText = item.name;
+        itemTextContainer.appendChild(itemName);
+        const itemSpec = document.createElement("span");
+        itemSpec.className = "bring-list-item-specification-label";
+        itemSpec.innerText = item.specification;
+        itemTextContainer.appendChild(itemSpec);
+        el.appendChild(itemTextContainer);
+
+        return el;
+    },
+
+    buildAddButton: function () {
+        const bringListAdd = document.createElement("div");
+        bringListAdd.className = "bring-list-item-add";
+        bringListAdd.innerHTML = "+";
+        bringListAdd.onclick = () => this.openKeyboard();
+        return bringListAdd;
+    },
+
     getDom: function () {
-        // if the user doesn't want to show the recently bought items and has no items in the list --> hide list
+        // hide when there is nothing to show
         if (!this.currentList ||
-            ((!this.currentList.purchase || !this.currentList.purchase.length || this.currentList.purchase.length === 0) &&
+            ((!this.currentList.purchase || this.currentList.purchase.length === 0) &&
                 !this.config.showLatestItems)) {
             return document.createElement("span");
         }
@@ -82,14 +141,6 @@ Module.register("MMM-Bring", {
         if (this.config.showListName && this.currentList && this.currentList.name) {
             if (this.config.listDropdown && (!!this.lists && this.lists.length > 1)) {
                 const dropTitle = this.createDropDown();
-                document.addEventListener("click", event => {
-                    if (!event.target.matches('.bring-titleBtn')) {
-                        var dropDown = document.getElementById("bring-dropItems");
-                        if (dropDown.classList.contains('show')) {
-                            dropDown.classList.remove('show');
-                        }
-                    }
-                });
                 container.appendChild(dropTitle);
             } else {
                 const title = document.createElement("h3");
@@ -98,120 +149,79 @@ Module.register("MMM-Bring", {
             }
         }
 
-        // Purchase
-        if (this.currentList && this.currentList.purchase) {
-            const bringList = document.createElement("div");
-            bringList.className = "bring-list";
-            let max = this.currentList.purchase.length;
-            if (this.config.maxItems !== 0 && max > this.config.maxItems) {
-                max = this.config.maxItems;
-            }
-            for (let i = 0, len = max; i < len; i++) {
-                const bringListItem = document.createElement("div");
-                bringListItem.className = "bring-list-item-content";
-                bringListItem.style = "background-color: " + this.config.activeItemColor;
-                bringListItem.onclick = () => this.itemClicked({
-                    name: this.currentList.purchase[i].name,
-                    purchase: true,
-                    listId: this.currentList.uuid
-                });
+        // --- Purchase area ---
+        this.renderPurchase(container);
 
-                const upperPartContainer = document.createElement("div");
-                upperPartContainer.className = "bring-list-item-upper-part-container";
-                const imageContainer = document.createElement("div");
-                imageContainer.className = "bring-list-item-image-container";
-                const image = document.createElement("img");
-                image.src = this.currentList.purchase[i].imageSrc;
-                imageContainer.appendChild(image);
-                upperPartContainer.appendChild(imageContainer);
-
-                bringListItem.appendChild(upperPartContainer);
-
-
-                const itemTextContainer = document.createElement("div");
-                itemTextContainer.className = "bring-list-item-text-container";
-                const itemName = document.createElement("span");
-                itemName.className = "bring-list-item-name";
-                itemName.innerText = this.currentList.purchase[i].name;
-                itemTextContainer.appendChild(itemName);
-
-                const itemSpec = document.createElement("span");
-                itemSpec.className = "bring-list-item-specification-label";
-                itemSpec.innerText = this.currentList.purchase[i].specification;
-                itemTextContainer.appendChild(itemSpec);
-
-                bringListItem.appendChild(itemTextContainer);
-
-                bringList.appendChild(bringListItem);
-            }
-
-            if (this.config.useKeyboard) {
-                //include add button
-                const bringListAdd = document.createElement("div");
-                bringListAdd.className = "bring-list-item-add";
-                var self = this;
-                bringListAdd.onclick = function () {
-                    self.openKeyboard();
-                };
-                bringListAdd.innerHTML = "+";
-                bringList.appendChild(bringListAdd);
-            }
-
-            container.appendChild(bringList);
-        }
+        // --- Recently bought area (unchanged behaviour) ---
         if (this.config.showLatestItems && this.currentList && this.currentList.recently) {
             const bringListRecent = document.createElement("div");
             bringListRecent.className = "bring-list";
-
             let max = this.currentList.recently.length;
             if (this.config.maxLatestItems !== 0 && max > this.config.maxLatestItems) {
                 max = this.config.maxLatestItems;
             }
-            for (let i = 0, len = max; i < len; i++) {
-                const bringListItem = document.createElement("div");
-                bringListItem.className = "bring-list-item-content";
-                bringListItem.style = "background-color: " + this.config.latestItemColor;
-                bringListItem.onclick = () => this.itemClicked({
-                    name: this.currentList.recently[i].name,
-                    purchase: false,
-                    listId: this.currentList.uuid
-                });
-
-                const upperPartContainer = document.createElement("div");
-                upperPartContainer.className = "bring-list-item-upper-part-container";
-                const imageContainer = document.createElement("div");
-                imageContainer.className = "bring-list-item-image-container";
-                const image = document.createElement("img");
-                image.src = this.currentList.recently[i].imageSrc;
-                imageContainer.appendChild(image);
-                upperPartContainer.appendChild(imageContainer);
-
-                bringListItem.appendChild(upperPartContainer);
-
-
-                const itemTextContainer = document.createElement("div");
-                itemTextContainer.className = "bring-list-item-text-container";
-                const itemName = document.createElement("div");
-                itemName.className = "bring-list-item-name";
-                itemName.innerText = this.currentList.recently[i].name;
-                itemTextContainer.appendChild(itemName);
-
-                const itemSpec = document.createElement("div");
-                itemSpec.className = "bring-list-item-specification-label";
-                itemSpec.innerText = this.currentList.recently[i].specification;
-                itemTextContainer.appendChild(itemSpec);
-
-                bringListItem.appendChild(itemTextContainer);
-
-                bringListRecent.appendChild(bringListItem);
-                container.appendChild(bringListRecent);
+            for (let i = 0; i < max; i++) {
+                bringListRecent.appendChild(
+                    this.buildItemEl(this.currentList.recently[i], this.config.latestItemColor, false));
             }
+            container.appendChild(bringListRecent);
         }
+
         return container;
     },
 
+    renderPurchase: function (container) {
+        const mode = this.config.useSections;
+        const limit = (items) => {
+            if (this.config.maxItems !== 0 && items.length > this.config.maxItems) {
+                return items.slice(0, this.config.maxItems);
+            }
+            return items;
+        };
+
+        let lastList = null;
+
+        if (mode === "show" && this.currentList.sections && this.currentList.sections.length) {
+            // grouped: one header + one .bring-list per section, capped over the total
+            let remaining = this.config.maxItems === 0 ? Infinity : this.config.maxItems;
+            for (const section of this.currentList.sections) {
+                if (remaining <= 0) break;
+                const header = document.createElement("div");
+                header.className = "bring-section-header";
+                header.innerText = section.name;
+                container.appendChild(header);
+
+                const listEl = document.createElement("div");
+                listEl.className = "bring-list";
+                for (const item of section.items) {
+                    if (remaining <= 0) break;
+                    listEl.appendChild(this.buildItemEl(item, this.config.activeItemColor, true));
+                    remaining--;
+                }
+                container.appendChild(listEl);
+                lastList = listEl;
+            }
+        } else {
+            // flat: "on" uses the section-sorted order, "off" the raw order
+            const source = (mode === "on" && this.currentList.purchaseSorted)
+                ? this.currentList.purchaseSorted
+                : (this.currentList.purchase || []);
+            const items = limit(source);
+            const listEl = document.createElement("div");
+            listEl.className = "bring-list";
+            for (const item of items) {
+                listEl.appendChild(this.buildItemEl(item, this.config.activeItemColor, true));
+            }
+            container.appendChild(listEl);
+            lastList = listEl;
+        }
+
+        if (this.config.useKeyboard && lastList) {
+            lastList.appendChild(this.buildAddButton());
+        }
+    },
+
     openKeyboard: function () {
-        console.log("MMM-Bring opening keyboard");
         this.sendNotification("KEYBOARD", {key: "mmm-bring", style: "default"});
     },
 
@@ -219,24 +229,18 @@ Module.register("MMM-Bring", {
         if (notification === "LIST_DATA") {
             this.currentList = payload.currentList;
             this.lists = payload.lists;
-            if (!this.config.listName) {
+            if (!this.config.listName && this.currentList) {
                 this.config.listName = this.currentList.name;
             }
             this.updateDom(1000);
-        } else if (notification === "RELOAD_LIST") {
-            this.sendSocketNotification("GET_LIST", this.config);
         }
     },
 
     notificationReceived: function (notification, payload) {
-        if (notification === "KEYBOARD_INPUT" && payload.key === "mmm-bring" && payload.message != '') {
-            var item = {
-                name: payload.message[0].toUpperCase() + payload.message.substring(1),
-                purchase: false,
-                listId: this.currentList.uuid
-            };
-            console.log("MMM-Bring received Keyboard input: " + item.name);
-            this.sendSocketNotification("PURCHASED_ITEM", item);
+        if (notification === "KEYBOARD_INPUT" && payload.key === "mmm-bring" && payload.message !== '') {
+            const name = payload.message[0].toUpperCase() + payload.message.substring(1);
+            // new custom item -> add to the "to buy" list (TO_PURCHASE)
+            this.sendSocketNotification("BRING_MUTATE", { itemId: name, spec: "", markPurchased: false });
         } else if (notification === "HIDE_SHIPPING") {
             this.hide(1000, {lockString: "LOCKEDBYMODULE"});
         } else if (notification === "SHOW_SHIPPING") {
@@ -244,8 +248,15 @@ Module.register("MMM-Bring", {
         }
     },
 
-    itemClicked: function (item) {
-        this.sendSocketNotification("PURCHASED_ITEM", item);
+    // markPurchased: true  = item is on the buy-list, a click marks it bought (TO_RECENTLY)
+    //                false = item is in "recently", a click puts it back on the list (TO_PURCHASE)
+    itemClicked: function (item, markPurchased) {
+        this.sendSocketNotification("BRING_MUTATE", {
+            itemId: item.itemId,
+            spec: item.specification || "",
+            uuid: item.uuid,
+            markPurchased: markPurchased
+        });
     }
 
 });

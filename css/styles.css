@@ -2,16 +2,19 @@
  * Magic Mirror                                      *
  * MMM-Bring CSS                                     *
  *                                                   *
- * By David Werth                                    *
+ * Original by David Werth                           *
+ * Fork by Dr. Ralf Korell                           *
  *                                                   *
- * Edit this file ONLY if you know what you're doing *
+ * # Modified: 2026-07-06 21:41 - v2.0.0: MuseoSans-300 removed (paid weight);
+ *   item spec uses "Roboto Condensed"; added .bring-section-header.
+ * # Modified: 2026-07-06 22:44 - QA: removed duplicate border-radius on .bring-list-item-content.
  *****************************************************/
 
-@font-face {
-    font-family: "MuseoSans-300";
-    src: url("MuseoSans-300.woff") format("woff");
-}
-
+/*
+ * Font "Museo Sans 500" by Jos Buivenga (exljbris Font Foundry) — free weight.
+ * Free-license attribution requirement: https://www.exljbris.com/museosans.html
+ * (The paid 300 weight was removed; the specification label now uses Roboto Condensed.)
+ */
 @font-face {
     font-family: "MuseoSans-500";
     src: url("MuseoSans-500.woff") format("woff");
@@ -87,7 +90,6 @@
     width: 98px;
     height: 116px;
     margin: 4px;
-    border-radius: 6px;
     font-size: 14px;
     font-style: normal;
     color: white;
@@ -168,9 +170,23 @@
     text-overflow: ellipsis;
     padding-top: 1px;
     line-height: .95em;
-    font-family: MuseoSans-300, sans-serif;
+    font-family: "Roboto Condensed", sans-serif;
 }
 
 .bring-top_right, .bring-top_left, .bring-top_center, .bring-bottom_left, .bring-bottom_center, .bring-bottom_right {
     max-width: 33vw;
+}
+
+/*
+*  SECTION HEADER (useSections: "show")
+*/
+
+.bring-section-header {
+    width: 100%;
+    font-size: 0.9em;
+    font-weight: 300;
+    opacity: 0.7;
+    margin: 6px 0 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
