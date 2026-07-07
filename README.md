@@ -97,8 +97,8 @@ The first refresh logs in again automatically (the local token cache is rebuilt)
 | `showListName`    | Show the list name as title. **Type:** `boolean` **Default:** `true` |
 | `showCount`       | When the purchase list is longer than `maxItems`, show a count. Appended to the title as ` (total)` (e.g. `Home (11)`); if there is no title (`showListName: false` and no `customTitle`) it is shown alone as `...[maxItems/total]` (e.g. `...[8/11]`). Never shown when `maxItems: 0`. **Type:** `boolean` **Default:** `true` |
 | `useSections`     | Category handling. **`"off"`** = flat list in raw order. **`"on"`** = items *sorted* into the app's section order as one continuous list, **without** headers. **`"show"`** = additionally render the category name as a header. **Type:** `string` **Default:** `"on"` |
-| `activeItemColor` | Colour for items to buy. **Type:** `string` **Default:** `#EE524F` |
-| `latestItemColor` | Colour for recently bought items. **Type:** `string` **Default:** `#4FABA2` |
+| `activeItemColor` | Colour for items to buy. **Type:** `string` **Default:** `#EE524F` <img src="img/swatch-ee524f.svg" width="13" height="13" alt="#EE524F"> |
+| `latestItemColor` | Colour for recently bought items. **Type:** `string` **Default:** `#4FABA2` <img src="img/swatch-4faba2.svg" width="13" height="13" alt="#4FABA2"> |
 | `showLatestItems` | Show recently bought items. **Type:** `boolean` **Default:** `false` |
 | `maxItems`        | Max items to display. **Type:** `number` **Default:** `0` (all) |
 | `maxLatestItems`  | Max recent items to display. **Type:** `number` **Default:** `0` (all) |
