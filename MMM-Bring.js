@@ -6,6 +6,7 @@
  * # Modified: 2026-07-06 21:41 - v2.0.0: pure-display frontend, useSections render, batch mutate.
  * # Modified: 2026-07-06 22:44 - QA: register dropdown-close listener once (no leak); list names via textContent.
  * # Modified: 2026-07-06 23:06 - QA2: set background via style.backgroundColor; strict equality.
+ * # Modified: 2026-07-07 10:28 - v2.1.0: showCount title indicator; customTitle count now follows showCount.
  */
 /*jshint esversion: 6 */
 Module.register("MMM-Bring", {
@@ -26,7 +27,9 @@ Module.register("MMM-Bring", {
         customTitle: undefined,
         listDropdown: true,
         // "off" = raw list, "on" = sort by section (no headers), "show" = grouped with headers
-        useSections: "on"
+        useSections: "on",
+        // show a count indicator in the title only when the purchase list is truncated (total > maxItems)
+        showCount: true
     },
 
     getStyles: function () {
@@ -49,13 +52,13 @@ Module.register("MMM-Bring", {
         });
     },
 
-    createDropDown: function () {
+    createDropDown: function (suffix) {
         const drop = document.createElement("div");
         drop.className = "bring-dropdown-title";
         const titleBtn = document.createElement("input");
         titleBtn.setAttribute("type", "button");
         titleBtn.className = "bring-titleBtn bright";
-        titleBtn.value = this.config.listName + " ⯆";
+        titleBtn.value = this.config.listName + (suffix || "") + " ⯆";
         titleBtn.addEventListener("click", function () {
             document.getElementById("bring-dropItems").classList.toggle("show");
         });
@@ -131,22 +134,37 @@ Module.register("MMM-Bring", {
         const container = document.createElement("div");
         container.className = "bring-list-container bring-" + this.data.position;
 
+        // Count indicator — shown once, only when the purchase list is truncated (total > maxItems).
+        // Attached to the highest available title (customTitle > list title); standalone otherwise.
+        const total = (this.currentList.purchase || []).length;
+        const truncated = this.config.maxItems !== 0 && total > this.config.maxItems;
+        const showInd = this.config.showCount && truncated;
+        const suffix = showInd ? " (" + total + ")" : "";
+        let titleTaken = false;
+
         if (!!this.config.customTitle) {
             const headerElem = document.createElement("header");
             headerElem.className = "module-header";
-            headerElem.innerText = this.config.customTitle + " (" + (this.currentList.purchase || []).length + ")";
+            headerElem.innerText = this.config.customTitle + suffix;
             container.appendChild(headerElem);
+            titleTaken = true;
         }
 
         if (this.config.showListName && this.currentList && this.currentList.name) {
+            const listSuffix = titleTaken ? "" : suffix;
             if (this.config.listDropdown && (!!this.lists && this.lists.length > 1)) {
-                const dropTitle = this.createDropDown();
+                const dropTitle = this.createDropDown(listSuffix);
                 container.appendChild(dropTitle);
             } else {
                 const title = document.createElement("h3");
-                title.innerText = this.config.listName;
+                title.innerText = this.config.listName + listSuffix;
                 container.appendChild(title);
             }
+        } else if (!this.config.customTitle && showInd) {
+            // no title present but the list is truncated → standalone indicator
+            const title = document.createElement("h3");
+            title.innerText = "...[" + this.config.maxItems + "/" + total + "]";
+            container.appendChild(title);
         }
 
         // --- Purchase area ---

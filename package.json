@@ -1,6 +1,6 @@
 {
   "name": "mmm-bring",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A MagicMirror² module displaying your Bring! shopping list, grouped by category like the app.",
   "main": "MMM-Bring.js",
   "repository": {

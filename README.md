@@ -1,4 +1,4 @@
-# MMM-Bring (Stand: 06.07.2026)
+# MMM-Bring
 
 A module for [MagicMirror²](https://github.com/MagicMirrorOrg/MagicMirror) that displays your
 [Bring!](https://www.getbring.com) shopping list — optionally **grouped by category and sorted exactly like the
@@ -15,8 +15,9 @@ This is a fork of the original [werthdavid/MMM-Bring](https://github.com/werthda
 current MagicMirror / Node versions.
 
 ## What's new in 2.0.0
-* **App-identical categories** — items are grouped into Bring! sections (Obst & Gemüse, Milch & Käse …), ordered
-  by your list's own `listSectionOrder`, honouring hidden sections; unknown items land in *Eigene Artikel*.
+* **App-identical categories** — items are grouped into the same sections the Bring! app uses, ordered by your
+  list's own `listSectionOrder`, honouring hidden sections; items with no category go into an *own items* section
+  whose label is localized per `locale`.
 * **Zero runtime dependencies** — `axios` and `data-store` removed; uses native `fetch` (Node ≥ 18).
 * **Backend-driven polling** — the node helper owns the refresh cycle and caches the last good state, so a browser
   reload shows data instantly and a transient network error never blanks the list.
@@ -34,17 +35,32 @@ The full list of changes (including bug fixes and the security/QA pass) is in [C
 ```bash
 cd ~/MagicMirror/modules
 git clone https://github.com/rkorell/MMM-Bring.git
-cd MMM-Bring
-npm install
 ```
+No `npm install` needed — the module has **zero runtime dependencies**. Just add the module block to your
+`config.js` (see [Configuration](#configuration)).
 
 ## Updating
 ```bash
 cd ~/MagicMirror/modules/MMM-Bring
-rm -rf node_modules
 git pull
-npm install
 ```
+
+## Migrating from the original module
+If you already run David Werth's original `MMM-Bring` and want to switch to this fork, the simplest way is to
+replace the folder — your `config.js` entry stays the same:
+```bash
+cd ~/MagicMirror/modules
+rm -rf MMM-Bring
+git clone https://github.com/rkorell/MMM-Bring.git
+```
+Alternatively, if you are comfortable with git, just repoint the remote (the fork shares the original's history,
+so this fast-forwards):
+```bash
+cd ~/MagicMirror/modules/MMM-Bring
+git remote set-url origin https://github.com/rkorell/MMM-Bring.git
+git pull
+```
+The first refresh logs in again automatically (the local token cache is rebuilt).
 
 ## Configuration
 ```json5
@@ -55,8 +71,9 @@ npm install
         email: "USER@EXAMPLE.COM",
         password: "SECRET",
         updateInterval: 15,       // minutes
-        listName: "Zuhause",      // optional; default = your default list
+        listName: "Home",         // optional; default = your default list
         showListName: true,
+        showCount: true,          // show a count when the list is longer than maxItems
         useSections: "on",        // "off" | "on" | "show"
         activeItemColor: "#EE524F",
         latestItemColor: "#4FABA2",
@@ -78,6 +95,7 @@ npm install
 | `updateInterval`  | How often the list is reloaded. **Type:** `number` (minutes) **Default:** `15` |
 | `listName`        | Name of the list to display. **Type:** `string` **Default:** your default list |
 | `showListName`    | Show the list name as title. **Type:** `boolean` **Default:** `true` |
+| `showCount`       | When the purchase list is longer than `maxItems`, show a count. Appended to the title as ` (total)` (e.g. `Home (11)`); if there is no title (`showListName: false` and no `customTitle`) it is shown alone as `...[maxItems/total]` (e.g. `...[8/11]`). Never shown when `maxItems: 0`. **Type:** `boolean` **Default:** `true` |
 | `useSections`     | Category handling. **`"off"`** = flat list in raw order. **`"on"`** = items *sorted* into the app's section order as one continuous list, **without** headers. **`"show"`** = additionally render the category name as a header. **Type:** `string` **Default:** `"on"` |
 | `activeItemColor` | Colour for items to buy. **Type:** `string` **Default:** `#EE524F` |
 | `latestItemColor` | Colour for recently bought items. **Type:** `string` **Default:** `#4FABA2` |
@@ -86,7 +104,7 @@ npm install
 | `maxLatestItems`  | Max recent items to display. **Type:** `number` **Default:** `0` (all) |
 | `locale`          | Fallback language if the list has no `listArticleLanguage`. **Type:** `string` **Default:** `de-DE` |
 | `useKeyboard`     | Use together with MMM-Keyboard to add items. **Type:** `boolean` **Default:** `false` |
-| `customTitle`     | Show this text as the module title. **Type:** `string` **Default:** `undefined` |
+| `customTitle`     | Show this text as the module title (above the list name). When set, the `showCount` count is appended here instead of to the list name. **Type:** `string` **Default:** `undefined` |
 | `listDropdown`    | With more than one list, show a dropdown selector. **Type:** `boolean` **Default:** `true` |
 
 ### Valid locales
@@ -107,6 +125,7 @@ npm install
 ## Credits
 * Original module: **David Werth** — <https://github.com/werthdavid/MMM-Bring>
 * Fork & 2.0.0 rewrite: **Dr. Ralf Korell** — <https://github.com/rkorell/MMM-Bring>
+* API interaction inspired by [miaucl/bring-api](https://github.com/miaucl/bring-api) (Python) as a reference for a current, state-of-the-art Bring! implementation.
 
 ## License
-MIT
+[MIT](LICENSE) — see the [LICENSE](LICENSE) file for the full text and the bundled-font attribution.

@@ -4,6 +4,24 @@ All notable changes to this fork are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] — 2026-07-07
+
+### Added
+- `showCount` (default `true`): a title-line count indicator, shown only when the purchase list is longer than
+  `maxItems`. Appended to the title as ` (total)` (e.g. `Home (11)`), or shown standalone as `...[maxItems/total]`
+  (e.g. `...[8/11]`) when there is no title.
+
+### Changed
+- The `customTitle` item count now follows `showCount` (only shown when the list is truncated) instead of being
+  appended unconditionally.
+
+### Docs
+- README: locale-neutral wording (no German section names or fallback label in the English text); the *own items*
+  label is documented as localized per `locale`; `customTitle`'s count behaviour is documented; install/update
+  steps corrected (zero-dependency — no `npm install`); added a *Migrating from the original module* section;
+  credited [miaucl/bring-api](https://github.com/miaucl/bring-api) as inspiration; moved the Museo Sans font
+  attribution into the `LICENSE` file and linked it from the README.
+
 ## [2.0.0] — 2026-07-06
 
 Complete rewrite of the [rkorell/MMM-Bring](https://github.com/rkorell/MMM-Bring) fork of David
