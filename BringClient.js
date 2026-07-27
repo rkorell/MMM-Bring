@@ -13,6 +13,7 @@
  *   drop dead _get/_set, validate locale, enforce store file mode 0600.
  * # Modified: 2026-07-06 23:06 - QA2: graceful catalog-fetch fallback, null-proto maps for
  *   API-keyed dicts, _webGetJson cache optional, safeLocale moved after constants.
+ * # Modified: 2026-07-27 11:00 - gitleaks:allow on the public community api-key line.
  */
 
 const fs = require("fs");
@@ -22,7 +23,7 @@ const path = require("path");
 const API_BASE = "https://api.getbring.com/rest/";
 const WEB_LOCALE_BASE = "https://web.getbring.com/locale/";
 const ITEM_IMAGE_BASE = "https://web.getbring.com/assets/images/items/";
-const API_KEY = "cof4Nc6D8saplXjE3h3HXqHH8m7VU2i1Gs0g85Sp";
+const API_KEY = "cof4Nc6D8saplXjE3h3HXqHH8m7VU2i1Gs0g85Sp"; // gitleaks:allow — public Bring community key, not a secret
 
 const DEFAULT_LOCALE = "de-DE";
 // Last resort only. The "own items" section is app-side (not in the catalog); its real id/label
