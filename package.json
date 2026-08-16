@@ -16,11 +16,19 @@
   ],
   "author": "Dr. Ralf Korell (fork), David Werth (original)",
   "license": "MIT",
+  "scripts": {
+    "lint": "eslint ."
+  },
   "bugs": {
     "url": "https://github.com/rkorell/MMM-Bring/issues"
   },
   "homepage": "https://github.com/rkorell/MMM-Bring#readme",
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0"
   }
 }

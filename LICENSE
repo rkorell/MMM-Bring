@@ -20,13 +20,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Third-party asset — bundled font
-
-"Museo Sans" (weight 500) by Jos Buivenga / exljbris Font Foundry.
-This is a free weight, used under its free-font licence, which requires attribution
-to the foundry: https://www.exljbris.com/museosans.html
-The font file (css/MuseoSans-500.woff) remains the property of its author and is NOT
-covered by the MIT licence above.

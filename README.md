@@ -128,4 +128,4 @@ The first refresh logs in again automatically (the local token cache is rebuilt)
 * API interaction inspired by [miaucl/bring-api](https://github.com/miaucl/bring-api) (Python) as a reference for a current, state-of-the-art Bring! implementation.
 
 ## License
-[MIT](LICENSE) — see the [LICENSE](LICENSE) file for the full text and the bundled-font attribution.
+[MIT](LICENSE) — see the [LICENSE](LICENSE) file for the full text. The bundled font ("Museo Sans" by Jos Buivenga / exljbris) is covered by a separate free-font licence; see the [NOTICE](NOTICE) file for the required attribution.
