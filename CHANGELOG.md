@@ -4,6 +4,18 @@ All notable changes to this fork are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.1] — 2026-11-23
+
+### Fixed
+- With `useSections` `"on"` or `"show"`, items of one section could appear twice
+  ([#1](https://github.com/rkorell/MMM-Bring/issues/1)). The sorted list is now checked after every refresh: each
+  item that is not in a hidden section must appear exactly once. On a violation the display is repaired (repeats
+  dropped, missing items appended) and a full diagnostic report is written to
+  `diagnostics/inconsistency-<list name>.json` in the module folder (overwritten when the list data change); one
+  log line points to it. Please attach that file to the issue. It contains list and item names, no credentials.
+
+Update: `git pull`
+
 ## [2.1.0] — 2026-07-07
 
 ### Added

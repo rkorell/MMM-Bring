@@ -4,6 +4,9 @@
 # Runtime token cache (contains the Bring! auth token — never commit)
 bring.config.json
 
+# Inconsistency reports written at runtime (contain list and item names)
+/diagnostics/
+
 # Editor / IDE
 /.idea
 .vscode/*

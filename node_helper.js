@@ -7,10 +7,12 @@
  * # Modified: 2026-07-06 21:41 - v2.0.0: backend-driven polling + cache + batch mutate.
  * # Modified: 2026-07-06 22:44 - QA: guard mutate before client init; prevent overlapping polls.
  * # Modified: 2026-07-06 23:06 - QA2: pendingPoll flag (no dropped refresh); validate updateInterval.
+ * # Modified: 2026-11-23 16:58 - Issue #1: pass version + display config to the client's inconsistency report.
  */
 
 const NodeHelper = require("node_helper");
 const BringClient = require("./BringClient");
+const MODULE_VERSION = require("./package.json").version;
 
 const MINUTE = 60 * 1000;
 const DEFAULT_UPDATE_INTERVAL_MIN = 15;
@@ -25,22 +27,35 @@ module.exports = NodeHelper.create({
         this.pollTimer = null;
         this.polling = false;
         this.pendingPoll = false;
+        this.startCount = 0; // START_BRING_POLL received (report only: reveals multiple instances / reloads)
     },
 
     socketNotificationReceived(notification, payload) {
         if (notification === "START_BRING_POLL") {
             this.config = payload;
+            this.startCount++;
             if (!this.client) {
                 this.client = new BringClient(payload, this.path);
+                this.setDiagContext();
                 this.poll();
             } else {
                 // browser reload / list switch: serve cache instantly, then refresh now
                 if (this.lastPayload) this.sendSocketNotification("LIST_DATA", this.lastPayload);
+                this.setDiagContext();
                 this.pollNow();
             }
         } else if (notification === "BRING_MUTATE") {
             this.mutate(payload);
         }
+    },
+
+    // Context for the client's inconsistency report (no credentials).
+    setDiagContext() {
+        const c = this.config || {};
+        this.client.diagContext = {
+            version: MODULE_VERSION, useSections: c.useSections, locale: c.locale,
+            listName: c.listName, maxItems: c.maxItems, startCount: this.startCount
+        };
     },
 
     intervalMs() {

@@ -14,6 +14,8 @@
  * # Modified: 2026-07-06 23:06 - QA2: graceful catalog-fetch fallback, null-proto maps for
  *   API-keyed dicts, _webGetJson cache optional, safeLocale moved after constants.
  * # Modified: 2026-07-27 11:00 - gitleaks:allow on the public community api-key line.
+ * # Modified: 2026-11-23 16:58 - Issue #1: consistency guard on the sorted list (each item exactly once),
+ *   full diagnostic report on violation (diagnostics/inconsistency-<list>.json, one log line), display repaired.
  */
 
 const fs = require("fs");
@@ -57,10 +59,13 @@ class BringClient {
         this.locale = safeLocale(opts.locale);
         this.ownItems = this._loadOwnItemsLabel(); // localized label for the "no category" section
         this.storePath = modulePath + "/bring.config.json";
+        this.diagnosticsDir = path.join(modulePath, "diagnostics"); // inconsistency reports, one file per list
         this.store = this._loadStore();
         // in-memory caches for the static public locale files
         this._catalogCache = {};
         this._articlesCache = {};
+        this._reportedSig = Object.create(null); // listId -> signature of the last written inconsistency report
+        this.diagContext = {};                   // set by node_helper: version + display config (report only)
     }
 
     // --- persistent token store (tiny fs JSON, replaces data-store) ---------
@@ -222,7 +227,10 @@ class BringClient {
             byList[uls.listUuid] = {
                 listSectionOrder: this._safeParseArray(kv.listSectionOrder),
                 hiddenSections: this._safeParseArray(kv.hiddenSections),
-                listArticleLanguage: kv.listArticleLanguage || null
+                listArticleLanguage: kv.listArticleLanguage || null,
+                // unparsed originals, for the consistency report only
+                rawListSectionOrder: kv.listSectionOrder,
+                rawHiddenSections: kv.hiddenSections
             };
         }
         return byList;
@@ -310,10 +318,12 @@ class BringClient {
         // The catalogs live on a public CDN. If they are unreachable on a cold start, degrade to an
         // ungrouped view (items keep raw names/order) instead of failing the whole refresh.
         let catalog, articles;
+        let catalogError = null;
         try {
             catalog = await this.getCatalog(locale);
             articles = await this.getArticles(locale);
         } catch (e) {
+            catalogError = e.message;
             console.error("MMM-Bring: locale catalog unavailable, showing ungrouped:", e.message);
             catalog = { secName: Object.create(null), defaultOrder: [], defaultSection: Object.create(null) };
             articles = null;
@@ -328,10 +338,12 @@ class BringClient {
         const fallbackId = (sectionOrder || []).find(id => !catalog.secName[id]) || DEFAULT_OWN_ITEMS_ID;
         const sectionName = (sid) => sid === fallbackId ? this.ownItems : (catalog.secName[sid] || sid);
 
+        const sectionSource = Object.create(null); // itemId -> "user" | "catalog" | "fallback" (report only)
         const enrich = (apiItem) => {
             const itemId = apiItem.itemId;
             const detail = detailById[itemId];
             let sectionId = detail && detail.userSectionId ? detail.userSectionId : null;
+            sectionSource[itemId] = sectionId ? "user" : (catalog.defaultSection[itemId] ? "catalog" : "fallback");
             if (!sectionId) sectionId = catalog.defaultSection[itemId] || fallbackId;
             return {
                 itemId, // canonical key — used for mutations (never translated)
@@ -351,30 +363,139 @@ class BringClient {
         const bySection = Object.create(null);
         for (const it of purchase) (bySection[it.sectionId] = bySection[it.sectionId] || []).push(it);
 
-        const sections = [];
-        const purchaseSorted = [];
+        let sections = [];
+        let purchaseSorted = [];
         const emitted = new Set();
+        const trace = []; // emission steps (report only)
         for (const sid of order) {
             if (hidden.has(sid) || !bySection[sid]) continue;
             emitted.add(sid);
+            trace.push({ loop: "order", sid, type: typeof sid, items: bySection[sid].length });
             sections.push({ sectionId: sid, name: sectionName(sid), items: bySection[sid] });
             purchaseSorted.push(...bySection[sid]);
         }
         // any section not covered by listSectionOrder (safety net, keeps items visible)
         for (const sid of Object.keys(bySection)) {
             if (emitted.has(sid) || hidden.has(sid)) continue;
+            trace.push({ loop: "safety-net", sid, type: typeof sid, items: bySection[sid].length });
             sections.push({ sectionId: sid, name: sectionName(sid), items: bySection[sid] });
             purchaseSorted.push(...bySection[sid]);
         }
 
+        // Consistency guard: every raw item outside a hidden section must appear exactly once in
+        // purchaseSorted and in sections. On a violation, log a full report once and repair the result.
+        const listDisplayName = this.store["list_name_" + listId] || listName || "";
+        const expected = purchase.filter(it => !hidden.has(it.sectionId));
+        const sortedCheck = this._repairFlat(purchaseSorted, expected);
+        const sectionsCheck = this._repairSections(sections, expected, fallbackId, sectionName);
+        if (sortedCheck.violated || sectionsCheck.violated) {
+            this._reportInconsistency(listId, {
+                list: { id: listId, name: listDisplayName, listArticleLanguage: settings.listArticleLanguage || null },
+                rawListSectionOrder: settings.rawListSectionOrder,
+                parsedListSectionOrder: (settings.listSectionOrder || []).map(v => ({ value: v, type: Array.isArray(v) ? "array" : typeof v })),
+                rawHiddenSections: settings.rawHiddenSections,
+                catalog: {
+                    source: WEB_LOCALE_BASE, locale, error: catalogError,
+                    sections: catalog.defaultOrder.length, items: Object.keys(catalog.defaultSection).length
+                },
+                fallbackId,
+                purchaseRaw: purchaseRaw.map(i => ({ uuid: i.uuid, itemId: i.itemId, specification: i.specification || "" })),
+                details: purchaseRaw.map(i => ({
+                    itemId: i.itemId,
+                    records: (detailsArr || []).filter(d => d.itemId === i.itemId)
+                        .map(d => ({ uuid: d.uuid, userSectionId: d.userSectionId, userIconItemId: d.userIconItemId }))
+                })),
+                assignment: purchase.map(it => ({ uuid: it.uuid, itemId: it.itemId, sectionId: it.sectionId, source: sectionSource[it.itemId] })),
+                buckets: Object.keys(bySection).map(sid => ({ sid, items: bySection[sid].map(i => i.itemId) })),
+                trace,
+                result: {
+                    purchaseSorted: { count: purchaseSorted.length, duplicates: sortedCheck.duplicates, missing: sortedCheck.missing },
+                    sections: { count: sections.length, duplicates: sectionsCheck.duplicates, missing: sectionsCheck.missing }
+                }
+            });
+            purchaseSorted = sortedCheck.items;
+            sections = sectionsCheck.sections;
+        }
+
         return {
             uuid: listId,
-            name: this.store["list_name_" + listId] || listName || "",
+            name: listDisplayName,
             purchase,        // raw API order (for useSections: "off")
             purchaseSorted,  // section-ordered flat list (for useSections: "on")
             sections,        // grouped + ordered (for useSections: "show")
             recently
         };
+    }
+
+    // --- consistency guard (report + repair) --------------------------------
+    _itemKey(it) { return it.uuid || it.itemId + "|" + it.specification; }
+
+    // Keep the first occurrence of each expected item, drop repeats, append missing ones.
+    _repairFlat(list, expected) {
+        const seen = new Set();
+        const duplicates = [];
+        const items = [];
+        for (const it of list) {
+            const key = this._itemKey(it);
+            if (seen.has(key)) { duplicates.push(it.itemId); continue; }
+            seen.add(key);
+            items.push(it);
+        }
+        const missingItems = expected.filter(it => !seen.has(this._itemKey(it)));
+        items.push(...missingItems);
+        const missing = missingItems.map(it => it.itemId);
+        return { items, duplicates, missing, violated: duplicates.length > 0 || missing.length > 0 };
+    }
+
+    // Same rule for the grouped view; missing items go into the own-items section.
+    _repairSections(sections, expected, fallbackId, sectionName) {
+        const seen = new Set();
+        const duplicates = [];
+        let fixed = sections.map(s => ({
+            ...s,
+            items: s.items.filter(it => {
+                const key = this._itemKey(it);
+                if (seen.has(key)) { duplicates.push(it.itemId); return false; }
+                seen.add(key);
+                return true;
+            })
+        })).filter(s => s.items.length > 0);
+        const missingItems = expected.filter(it => !seen.has(this._itemKey(it)));
+        if (missingItems.length) {
+            const own = fixed.find(s => s.sectionId === fallbackId);
+            if (own) own.items = own.items.concat(missingItems);
+            else fixed = fixed.concat([{ sectionId: fallbackId, name: sectionName(fallbackId), items: missingItems }]);
+        }
+        const missing = missingItems.map(it => it.itemId);
+        return { sections: fixed, duplicates, missing, violated: duplicates.length > 0 || missing.length > 0 };
+    }
+
+    // Write the full report to diagnostics/inconsistency-<list name>.json (overwritten when the input data
+    // change) and log one line pointing to it. If the file cannot be written, the report goes to the log.
+    _reportInconsistency(listId, report) {
+        const signature = JSON.stringify([report.purchaseRaw, report.rawListSectionOrder, report.rawHiddenSections, report.assignment]);
+        if (this._reportedSig[listId] === signature) return;
+        this._reportedSig[listId] = signature;
+        const content = JSON.stringify({ createdAt: new Date().toISOString(), module: this.diagContext || {}, ...report }, null, 1);
+        const file = path.join(this.diagnosticsDir, "inconsistency-" + this._safeFileName(report.list.name, listId) + ".json");
+        const intro = `MMM-Bring: inconsistency in list "${report.list.name}" — display repaired`;
+        try {
+            fs.mkdirSync(this.diagnosticsDir, { recursive: true });
+            fs.writeFileSync(file, content);
+            console.warn(`${intro}, report written to ${file} — please attach it to an issue at https://github.com/rkorell/MMM-Bring/issues`);
+        } catch (e) {
+            console.warn(`${intro}; report file not writable (${e.message}), report follows:\n${content}`);
+        }
+    }
+
+    // List name as a readable file name: umlauts spelled out, everything else non-alphanumeric -> "-".
+    _safeFileName(name, fallback) {
+        const s = String(name || "")
+            .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue")
+            .replace(/Ä/g, "Ae").replace(/Ö/g, "Oe").replace(/Ü/g, "Ue").replace(/ß/g, "ss")
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        return s || fallback;
     }
 
     // --- mutations (modern batch endpoint) ----------------------------------
