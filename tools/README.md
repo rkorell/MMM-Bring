@@ -30,7 +30,7 @@ Both contain the same catalog, so it doesn't matter which one you use.
 
 You install `carfile` once, on the computer your mirror runs on.
 
-**Raspberry Pi and other Linux systems**
+#### Installing carfile on: Raspberry Pi and other Linux systems
 
 The commands assume MagicMirror is installed in the usual place, `~/MagicMirror`. If yours lives elsewhere,
 change that part of the path in steps 7 and 8.
@@ -78,7 +78,7 @@ after the other, all in the same terminal window.
    rm -r carfile_0.8.0_linux_$ARCH carfile_0.8.0_linux_$ARCH.tar.gz checksums.txt
    ```
 
-**Mac**
+#### Installing carfile on: Mac
 
 The commands assume MagicMirror is installed in the usual place, `~/MagicMirror`. If yours lives elsewhere,
 change that part of the path in steps 7 and 8.
@@ -125,7 +125,7 @@ one after the other, all in the same terminal window.
    rm -r carfile_0.8.0_darwin_$ARCH carfile_0.8.0_darwin_$ARCH.tar.gz checksums.txt
    ```
 
-**Windows**
+#### Installing carfile on: Windows
 
 The commands assume MagicMirror is installed in the usual place, your user folder (`C:\Users\<you>\MagicMirror`).
 If yours lives elsewhere, change that part of the path in steps 7 and 8.
