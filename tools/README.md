@@ -737,8 +737,3 @@ first). The answer is `local catalog removed …`:
 node tools/import-catalog.js --remove
 ```
 Then restart MagicMirror.
-
-## Good to know
-
-* `catalog-local/` and a `carfile` in `tools/` are ignored by git: a `git pull` neither touches nor removes them.
-* Without `catalog-local/`, the module works exactly as before, with Bring!'s web catalog.
