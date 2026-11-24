@@ -30,7 +30,8 @@ Both contain the same catalog, so it doesn't matter which one you use.
 
 You install `carfile` once, on the computer your mirror runs on.
 
-#### Installing carfile on: Raspberry Pi and other Linux systems
+<details>
+<summary><b>Installing carfile on: Raspberry Pi and other Linux systems</b></summary>
 
 The commands assume MagicMirror is installed in the usual place, `~/MagicMirror`. If yours lives elsewhere,
 change that part of the path in steps 7 and 8.
@@ -78,7 +79,10 @@ after the other, all in the same terminal window.
    rm -r carfile_0.8.0_linux_$ARCH carfile_0.8.0_linux_$ARCH.tar.gz checksums.txt
    ```
 
-#### Installing carfile on: Mac
+</details>
+
+<details>
+<summary><b>Installing carfile on: Mac</b></summary>
 
 The commands assume MagicMirror is installed in the usual place, `~/MagicMirror`. If yours lives elsewhere,
 change that part of the path in steps 7 and 8.
@@ -125,7 +129,10 @@ one after the other, all in the same terminal window.
    rm -r carfile_0.8.0_darwin_$ARCH carfile_0.8.0_darwin_$ARCH.tar.gz checksums.txt
    ```
 
-#### Installing carfile on: Windows
+</details>
+
+<details>
+<summary><b>Installing carfile on: Windows</b></summary>
 
 The commands assume MagicMirror is installed in the usual place, your user folder (`C:\Users\<you>\MagicMirror`).
 If yours lives elsewhere, change that part of the path in steps 7 and 8.
@@ -172,6 +179,8 @@ after the other, all in the same window.
    Remove-Item -Recurse "carfile_0.8.0_windows_$ARCH", "carfile_0.8.0_windows_$ARCH.zip", checksums.txt
    ```
 
+</details>
+
 ## Android: get the base.apk
 
 You copy the installed Bring! app from your phone to a computer over Wi-Fi, using Google's tool `adb`. Phone and
@@ -189,7 +198,8 @@ which opens the actual session. Both are part of the recipe.
 
 (Menu names differ a little between phone makers.)
 
-### Getting the base.apk on: Mac
+<details>
+<summary><b>Getting the base.apk on: Mac</b></summary>
 
 Open the app *Terminal*. Copy each command, paste it into the terminal and press Enter — one after the other,
 all in the same window.
@@ -242,7 +252,10 @@ all in the same window.
     ```
     If your mirror runs on this Mac, skip this step: the file is `~/platform-tools/base.apk`.
 
-### Getting the base.apk on: Linux PC
+</details>
+
+<details>
+<summary><b>Getting the base.apk on: Linux PC</b></summary>
 
 Open a terminal. Copy each command, paste it into the terminal and press Enter — one after the other, all in the
 same window.
@@ -295,7 +308,10 @@ same window.
     ```
     If your mirror runs on this PC, skip this step: the file is `~/platform-tools/base.apk`.
 
-### Getting the base.apk on: Windows
+</details>
+
+<details>
+<summary><b>Getting the base.apk on: Windows</b></summary>
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
@@ -361,13 +377,16 @@ same window.
 
     If your mirror runs on this PC, skip this step: the file is `C:\Users\<you>\platform-tools\base.apk`.
 
+</details>
+
 ## iOS: get the .ipa
 
 You download the Bring! app package straight from Apple's App Store, using the free tool `ipatool` and your
 Apple ID. You don't need an iPhone for this — just an Apple ID with two-factor authentication. The download
 is about 110 MB.
 
-### Getting the .ipa on: Raspberry Pi and other Linux systems
+<details>
+<summary><b>Getting the .ipa on: Raspberry Pi and other Linux systems</b></summary>
 
 Do this on the computer your mirror runs on — then the file is already where it's needed. Open a terminal. Copy
 each command, paste it into the terminal and press Enter — one after the other, all in the same terminal window.
@@ -457,7 +476,10 @@ each command, paste it into the terminal and press Enter — one after the other
 
 Your app package is now `~/bring-ios/bring.ipa`.
 
-### Getting the .ipa on: Mac
+</details>
+
+<details>
+<summary><b>Getting the .ipa on: Mac</b></summary>
 
 Open the app *Terminal*. Copy each command, paste it into the terminal and press Enter — one after the other,
 all in the same terminal window.
@@ -541,7 +563,10 @@ all in the same terminal window.
     ```
     If your mirror runs on this Mac, skip this step: the file is `~/bring-ios/bring.ipa`.
 
-### Getting the .ipa on: Windows
+</details>
+
+<details>
+<summary><b>Getting the .ipa on: Windows</b></summary>
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
@@ -643,12 +668,15 @@ same window.
 
     If your mirror runs on this PC, skip this step: the file is `C:\Users\<you>\bring-ios\bring.ipa`.
 
+</details>
+
 ## Import
 
 Do this on the computer your mirror runs on. The commands assume MagicMirror is installed in the usual place,
 `MagicMirror` in your home folder; if yours lives elsewhere, change that part of the path.
 
-### Importing on: Raspberry Pi, Linux or Mac
+<details>
+<summary><b>Importing on: Raspberry Pi, Linux or Mac</b></summary>
 
 Open a terminal. Copy each command, paste it into the terminal and press Enter — one after the other, all in
 the same window.
@@ -669,7 +697,10 @@ the same window.
    `MMM-Bring: catalog = local, de-DE, 604 items, CATALOG.VERSION 10, imported 2026-11-23`.
    If it says `catalog = web …` instead, the import didn't take effect — check step 2.
 
-### Importing on: Windows
+</details>
+
+<details>
+<summary><b>Importing on: Windows</b></summary>
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
@@ -688,6 +719,8 @@ same window.
 4. Check the MagicMirror log. It now shows one line per language in use, e.g.
    `MMM-Bring: catalog = local, de-DE, 604 items, CATALOG.VERSION 10, imported 2026-11-23`.
    If it says `catalog = web …` instead, the import didn't take effect — check step 2.
+
+</details>
 
 You can delete the app package afterwards; the module only needs `catalog-local/`.
 
