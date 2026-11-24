@@ -726,14 +726,42 @@ You can delete the app package afterwards; the module only needs `catalog-local/
 
 ## Update: refresh the local catalog after a new app version
 
-Bring! updates its catalog with new app versions. To follow, get the current app package again (Android or iOS,
-as above) and repeat the *Import*. The new catalog replaces the old one.
+Your local catalog is a snapshot: it shows the articles, categories and icons of the app version you imported
+it from. Bring! adds articles and icons from time to time and ships them with new app versions. Your mirror
+won't notice — it keeps using the snapshot until you import again.
+
+A good moment to update is when your mirror shows an item as an *own item* with a letter icon, although the
+app shows it with a picture in a category. Then get the current app package again, exactly as described
+above (Android or iOS), and repeat the *Import*. You don't have to remove anything first: the import builds
+the new catalog next to the old one and swaps them only when everything went well. If the import stops with
+an error, your current catalog stays as it was.
+
+The answer of the import and the log line after the restart show `CATALOG.VERSION`. If the number is higher
+than before, Bring! has changed the catalog for that language.
 
 ## Remove: delete the local catalog and go back to the web catalog
 
-To go back to the web catalog, run this in the module folder (Windows: `cd ~\MagicMirror\modules\MMM-Bring`
-first). The answer is `local catalog removed …`:
+If you no longer want the local catalog, remove it. Your mirror then works exactly as before, with Bring!'s
+web catalog. Nothing else changes: your configuration stays as it is, and you can import again at any time.
+
+Raspberry Pi, Linux or Mac — in a terminal:
+```
+cd ~/MagicMirror/modules/MMM-Bring
+```
 ```
 node tools/import-catalog.js --remove
 ```
-Then restart MagicMirror.
+
+Windows — in PowerShell:
+```
+cd ~\MagicMirror\modules\MMM-Bring
+```
+```
+node tools/import-catalog.js --remove
+```
+
+The answer is `local catalog removed …`. Then restart MagicMirror the way you usually do; the log line now
+says `catalog = web …`.
+
+If you installed `carfile` for iOS, it stays in the `tools` folder. It does no harm there; to remove it as
+well, delete `tools/carfile` (Windows: `tools\carfile.exe`).
