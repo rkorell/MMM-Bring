@@ -4,6 +4,12 @@ A module for [MagicMirror²](https://github.com/MagicMirrorOrg/MagicMirror) that
 [Bring!](https://www.getbring.com) shopping list — optionally **grouped by category and sorted exactly like the
 Bring! app** (section order, hidden sections and language are taken from your list settings).
 
+**How this module talks to Bring!** Bring! offers no public API. Like the original module by David Werth, of
+which this is a fork, MMM-Bring uses the interfaces of Bring!'s web app (web.getbring.com) — a web app that has
+been left in beta and unmaintained for years and may disappear at any time. Other projects work the same way,
+e.g. the Python library [miaucl/bring-api](https://github.com/miaucl/bring-api), on which Home Assistant's
+built-in [Bring! integration](https://www.home-assistant.io/integrations/bring) is based.
+
 ### The three `useSections` modes
 
 | `"show"` — grouped with category headers | `"on"` — sorted into category order, no headers | `"off"` — raw list order |
@@ -11,8 +17,9 @@ Bring! app** (section order, hidden sections and language are taken from your li
 | ![useSections: show](/img/readme/mmm-bring-2026-sections.png) | ![useSections: on](/img/readme/mmm-bring-2026-listtitle.png) | ![useSections: off](/img/readme/mmm-bring-2026.png) |
 | Items grouped into Bring! sections with a header per category, exactly like the app. | Items sorted into the app's category order as one continuous list — no headers, no extra breaks. | The plain list in the raw order the API returns it. |
 
-This is a fork of the original [werthdavid/MMM-Bring](https://github.com/werthdavid/MMM-Bring), modernised for
-current MagicMirror / Node versions.
+## What's new in 3.0.0
+* **Local catalog (optional)** — make your mirror show articles, categories and icons just like the Bring! app.
+  See [Local catalog](#local-catalog-optional). No breaking changes: without it, everything works as before.
 
 ## What's new in 2.0.0
 * **App-identical categories** — items are grouped into the same sections the Bring! app uses, ordered by your
@@ -30,6 +37,7 @@ The full list of changes (including bug fixes and the security/QA pass) is in [C
 * Touch support (mark bought, add via MMM-Keyboard)
 * Locale support
 * Auto-layout
+* Optional [local catalog](#local-catalog-optional) — articles, categories and icons just like the app
 
 ## Installing
 ```bash
@@ -111,13 +119,26 @@ The first refresh logs in again automatically (the local token cache is rebuilt)
 `de-AT`, `de-CH`, `de-DE`, `es-ES`, `en-GB`, `en-US`, `en-CA`, `en-AU`, `fr-CH`, `fr-FR`, `it-CH`, `it-IT`,
 `pt-BR`, `nl-NL`, `hu-HU`, `nb-NO`, `pl-PL`, `ru-RU`, `sv-SE`, `tr-TR`
 
+## Local catalog (optional)
+As mentioned above, this module talks to Bring!'s web app — and that one hasn't seen any love for years. Its
+article catalog is just as old. That's why newer articles end up as *own items* with a plain letter, while the
+app shows them with a nice icon in the right category. Annoying! :-)
+
+The good news: the Bring! app on your phone carries the current catalog with it. A small script pulls it out of
+your own app package and hands it to the module — and your mirror looks just like the app. Don't feel like it?
+No problem: without a local catalog, everything stays as it is.
+
+**Your responsibility.** Getting the app package, running the script and using the data is entirely your call
+and at your own risk. The catalog, names and icons belong to Bring! Labs AG. I share the script as is — no
+warranty, no liability.
+
+Step by step to your local catalog: [tools/README.md](tools/README.md)
+
 ## Notes
-* **Localization.** Category names and item names are shown in your list's language (`listArticleLanguage` from
-  the Bring! app, `locale` as fallback) — the module fetches the matching `catalog.<locale>.json` and
-  `articles.<locale>.json`. The *own items* fallback section is not part of that catalog; its label comes from
-  the module's own `translations/` files, selected by your `locale` setting.
-* **Unofficial API.** Bring! provides no public API; this module uses the same internal endpoints as the app. They
-  may change without notice.
+* **Localization.** Category and item names are shown in your list's language, as set in the Bring! app. If the
+  list has none, the module's `locale` config option is used. The names come from Bring!'s web catalog, or from
+  your [local catalog](#local-catalog-optional) if you built one. The label of the *own items* section comes from
+  the module's own `translations/` files, also selected by the `locale` config option.
 * **Font.** The item name uses *Museo Sans 500* by Jos Buivenga / [exljbris](https://www.exljbris.com/museosans.html)
   (free weight; attribution as required by its licence). The specification label uses *Roboto Condensed* (the
   MagicMirror default font).
