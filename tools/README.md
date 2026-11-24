@@ -189,7 +189,7 @@ which opens the actual session. Both are part of the recipe.
 
 (Menu names differ a little between phone makers.)
 
-### Mac
+### Getting the base.apk on: Mac
 
 Open the app *Terminal*. Copy each command, paste it into the terminal and press Enter — one after the other,
 all in the same window.
@@ -242,7 +242,7 @@ all in the same window.
     ```
     If your mirror runs on this Mac, skip this step: the file is `~/platform-tools/base.apk`.
 
-### Linux PC
+### Getting the base.apk on: Linux PC
 
 Open a terminal. Copy each command, paste it into the terminal and press Enter — one after the other, all in the
 same window.
@@ -295,7 +295,7 @@ same window.
     ```
     If your mirror runs on this PC, skip this step: the file is `~/platform-tools/base.apk`.
 
-### Windows
+### Getting the base.apk on: Windows
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
@@ -367,7 +367,7 @@ You download the Bring! app package straight from Apple's App Store, using the f
 Apple ID. You don't need an iPhone for this — just an Apple ID with two-factor authentication. The download
 is about 110 MB.
 
-### Raspberry Pi and other Linux systems
+### Getting the .ipa on: Raspberry Pi and other Linux systems
 
 Do this on the computer your mirror runs on — then the file is already where it's needed. Open a terminal. Copy
 each command, paste it into the terminal and press Enter — one after the other, all in the same terminal window.
@@ -457,7 +457,7 @@ each command, paste it into the terminal and press Enter — one after the other
 
 Your app package is now `~/bring-ios/bring.ipa`.
 
-### Mac
+### Getting the .ipa on: Mac
 
 Open the app *Terminal*. Copy each command, paste it into the terminal and press Enter — one after the other,
 all in the same terminal window.
@@ -541,7 +541,7 @@ all in the same terminal window.
     ```
     If your mirror runs on this Mac, skip this step: the file is `~/bring-ios/bring.ipa`.
 
-### Windows
+### Getting the .ipa on: Windows
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
@@ -648,7 +648,7 @@ same window.
 Do this on the computer your mirror runs on. The commands assume MagicMirror is installed in the usual place,
 `MagicMirror` in your home folder; if yours lives elsewhere, change that part of the path.
 
-### Raspberry Pi / Linux / Mac
+### Importing on: Raspberry Pi, Linux or Mac
 
 Open a terminal. Copy each command, paste it into the terminal and press Enter — one after the other, all in
 the same window.
@@ -669,7 +669,7 @@ the same window.
    `MMM-Bring: catalog = local, de-DE, 604 items, CATALOG.VERSION 10, imported 2026-11-23`.
    If it says `catalog = web …` instead, the import didn't take effect — check step 2.
 
-### Windows
+### Importing on: Windows
 
 Open *PowerShell*. Copy each command, paste it into PowerShell and press Enter — one after the other, all in the
 same window.
