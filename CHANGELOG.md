@@ -1,8 +1,29 @@
 # Changelog
 
 All notable changes to this fork are documented here.
-The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project
-adheres to [Semantic Versioning](https://semver.org/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [3.0.0] — 2026-11-23
+
+No breaking changes — without a local catalog the module behaves exactly as before.
+
+### Added
+- **Local catalog (optional).** Bring!'s public web catalog, which the module used so far, has not been updated
+  since 2021, so newer articles (e.g. "Handschuhe") showed up as *own items* with a letter icon. The new
+  `tools/import-catalog.js` reads the current catalog — sections, article names and icons, all 20 languages — from
+  a Bring! app package you own (Android `base.apk` or iOS `.ipa`) and writes it to `catalog-local/` in the module
+  folder. When present, the module uses it per language instead of the web catalog: categories, names and icons
+  then match the app, including the letter icon for articles without an own icon.
+  `node tools/import-catalog.js --remove` deletes it again. See *Local catalog* in the README.
+- **Fixed:** root cause of [#1](https://github.com/rkorell/MMM-Bring/issues/1). The diagnostic report showed
+  that Bring! had stored the list's section order with "Eigene Artikel" twice; the module emitted that section
+  once per entry. Duplicate entries in the section order are now ignored, so the consistency check from 2.1.1
+  no longer has to repair (and report) this case.
+- One log line per language naming the catalog in use, e.g.
+  `MMM-Bring: catalog = local, de-DE, 604 items, CATALOG.VERSION 10, imported 2026-11-23` or
+  `MMM-Bring: catalog = web (web.getbring.com), de-DE`.
+
+Update: `git pull`
 
 ## [2.1.1] — 2026-11-23
 

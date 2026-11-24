@@ -145,7 +145,7 @@ Step by step to your local catalog: [tools/README.md](tools/README.md)
 
 ## Credits
 * Original module: **David Werth** — <https://github.com/werthdavid/MMM-Bring>
-* Fork & 2.0.0 rewrite: **Dr. Ralf Korell** — <https://github.com/rkorell/MMM-Bring>
+* Fork & 2.0.0 rewrite: **Dr. Ralf Korell**
 * API interaction inspired by [miaucl/bring-api](https://github.com/miaucl/bring-api) (Python) as a reference for a current, state-of-the-art Bring! implementation.
 
 ## License

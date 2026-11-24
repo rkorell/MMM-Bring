@@ -16,10 +16,14 @@
  * # Modified: 2026-07-27 11:00 - gitleaks:allow on the public community api-key line.
  * # Modified: 2026-11-23 16:58 - Issue #1: consistency guard on the sorted list (each item exactly once),
  *   full diagnostic report on violation (diagnostics/inconsistency-<list>.json, one log line), display repaired.
+ * # Modified: 2026-11-23 19:45 - v3.0.0: optional local catalog (catalog-local/, built by tools/import-catalog.js)
+ *   preferred per language over the web catalog; local icons; one log line per language naming the source.
+ * # Modified: 2026-11-24 09:20 - Issue #1 root cause: de-duplicate listSectionOrder before grouping.
  */
 
 const fs = require("fs");
 const path = require("path");
+const iconName = require("./iconName");
 
 // --- Endpoints & constants -------------------------------------------------
 const API_BASE = "https://api.getbring.com/rest/";
@@ -64,6 +68,12 @@ class BringClient {
         // in-memory caches for the static public locale files
         this._catalogCache = {};
         this._articlesCache = {};
+        // optional local catalog from tools/import-catalog.js; read once at start (a re-import needs a restart)
+        this.localDir = path.join(modulePath, "catalog-local");
+        this.localIconUrl = `/modules/${path.basename(modulePath)}/catalog-local/icons/`; // served by MagicMirror
+        this.localInfo = this._readJson(path.join(this.localDir, "info.json"));
+        this._catalogSource = Object.create(null); // locale -> "local" | "web"
+        this._iconIndex = null;                    // icon name -> file name, built on first use
         this._reportedSig = Object.create(null); // listId -> signature of the last written inconsistency report
         this.diagContext = {};                   // set by node_helper: version + display config (report only)
     }
@@ -245,10 +255,14 @@ class BringClient {
         }
     }
 
-    // --- public locale catalogs (no auth) -----------------------------------
+    // --- locale catalogs: local (if imported for this language), else public web (no auth) ----------
+    // Same file shapes in both places, so everything after loading is identical.
     async getCatalog(locale) {
         if (this._catalogCache[locale]) return this._catalogCache[locale];
-        const raw = await this._webGetJson(`catalog.${locale}.json`);
+        const local = this.localInfo ? this._readJson(path.join(this.localDir, `catalog.${locale}.json`)) : null;
+        const raw = local || await this._webGetJson(`catalog.${locale}.json`);
+        this._catalogSource[locale] = local ? "local" : "web";
+        this._logCatalogSource(locale);
         const secName = Object.create(null);
         const defaultOrder = [];
         const defaultSection = Object.create(null);
@@ -262,12 +276,59 @@ class BringClient {
         return model;
     }
 
+    // Called after getCatalog(locale), so the source for this language is already decided.
     async getArticles(locale) {
+        if (this._catalogSource[locale] === "local") {
+            if (!this._articlesCache[locale]) {
+                this._articlesCache[locale] = this._readJson(path.join(this.localDir, `articles.${locale}.json`)) || {};
+            }
+            return this._articlesCache[locale];
+        }
         return this._webGetJson(`articles.${locale}.json`, this._articlesCache, locale);
     }
 
+    _readJson(file) {
+        try {
+            return JSON.parse(fs.readFileSync(file, "utf8"));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // One line per language at first use, so a log shows which catalog the module works with.
+    _logCatalogSource(locale) {
+        if (this._catalogSource[locale] !== "local") {
+            console.log(`MMM-Bring: catalog = web (web.getbring.com), ${locale}`);
+            return;
+        }
+        const lang = (this.localInfo.languages || {})[locale] || {};
+        console.log(`MMM-Bring: catalog = local, ${locale}, ${lang.items} items`
+            + (lang.catalogVersion ? `, CATALOG.VERSION ${lang.catalogVersion}` : "")
+            + `, imported ${String(this.localInfo.importedAt || "").slice(0, 10)}`);
+    }
+
+    // Local icon for an item: its own (or user-chosen) icon, else the letter icon — like the app.
+    // Returns null when the local catalog has neither; the caller then uses the web icon as before.
+    _localIconSrc(itemId, detail) {
+        if (!this._iconIndex) {
+            this._iconIndex = Object.create(null);
+            try {
+                for (const f of fs.readdirSync(path.join(this.localDir, "icons"))) {
+                    this._iconIndex[f.slice(0, f.lastIndexOf("."))] = f;
+                }
+            } catch (e) { /* no icons folder: index stays empty */ }
+        }
+        const own = (detail && detail.userIconItemId) || itemId;
+        const file = this._iconIndex[iconName(own)] || this._iconIndex[iconName(String(itemId).charAt(0))];
+        return file ? this.localIconUrl + encodeURIComponent(file) : null;
+    }
+
     // --- image url (original normalization; catalog haystack/keys precomputed by the caller) ---
-    getImageSrc(itemId, detail, articleHaystack, articleKeysLower) {
+    getImageSrc(itemId, detail, articleHaystack, articleKeysLower, useLocal) {
+        if (useLocal) {
+            const local = this._localIconSrc(itemId, detail);
+            if (local) return local;
+        }
         let name = itemId;
         if (detail && detail.userIconItemId) name = detail.userIconItemId;
         if (articleHaystack && articleHaystack.indexOf(name.toLowerCase()) === -1) {
@@ -311,8 +372,10 @@ class BringClient {
         // list-specific settings (section order, hidden sections, language)
         const settings = (await this.getUserSettings())[listId] || {};
         const locale = safeLocale(settings.listArticleLanguage || this.locale);
-        const sectionOrder = settings.listSectionOrder && settings.listSectionOrder.length
-            ? settings.listSectionOrder : null;
+        // A section listed twice would be emitted twice (seen in issue #1: "Eigene Artikel" stored twice
+        // by Bring!). Keep the first occurrence only.
+        const uniqueOrder = [...new Set(settings.listSectionOrder || [])];
+        const sectionOrder = uniqueOrder.length ? uniqueOrder : null;
         const hidden = new Set(settings.hiddenSections || []);
 
         // The catalogs live on a public CDN. If they are unreachable on a cold start, degrade to an
@@ -331,6 +394,7 @@ class BringClient {
         // precomputed once here — getImageSrc would otherwise stringify the whole catalog per item
         const articleHaystack = articles ? JSON.stringify(articles).toLowerCase() : "";
         const articleKeysLower = articles ? Object.keys(articles).map(k => k.toLowerCase()) : [];
+        const useLocal = this._catalogSource[locale] === "local";
 
         // The "own items" fallback is not in the catalog. Its bucket/position key is derived from the
         // user's own listSectionOrder (the single entry that is not a catalog section); its DISPLAY name
@@ -350,7 +414,7 @@ class BringClient {
                 uuid: apiItem.uuid,
                 name: (articles && articles[itemId]) || itemId, // display name
                 specification: apiItem.specification || "",
-                imageSrc: this.getImageSrc(itemId, detail, articleHaystack, articleKeysLower),
+                imageSrc: this.getImageSrc(itemId, detail, articleHaystack, articleKeysLower, useLocal),
                 sectionId
             };
         };
@@ -395,7 +459,7 @@ class BringClient {
                 parsedListSectionOrder: (settings.listSectionOrder || []).map(v => ({ value: v, type: Array.isArray(v) ? "array" : typeof v })),
                 rawHiddenSections: settings.rawHiddenSections,
                 catalog: {
-                    source: WEB_LOCALE_BASE, locale, error: catalogError,
+                    source: useLocal ? this.localDir : WEB_LOCALE_BASE, locale, error: catalogError,
                     sections: catalog.defaultOrder.length, items: Object.keys(catalog.defaultSection).length
                 },
                 fallbackId,

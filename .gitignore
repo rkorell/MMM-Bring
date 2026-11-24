@@ -7,6 +7,15 @@ bring.config.json
 # Inconsistency reports written at runtime (contain list and item names)
 /diagnostics/
 
+# Local catalog built by tools/import-catalog.js (Bring!'s data — never commit)
+/catalog-local/
+/.catalog-local-*/
+/catalog-local.old/
+
+# carfile program a user may drop into tools/ for the iOS import (third-party binary — never commit)
+/tools/carfile
+/tools/carfile.exe
+
 # Editor / IDE
 /.idea
 .vscode/*
