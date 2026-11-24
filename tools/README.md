@@ -670,7 +670,7 @@ same window.
 
 </details>
 
-## Import
+## Import: build the local catalog from the app package
 
 Do this on the computer your mirror runs on. The commands assume MagicMirror is installed in the usual place,
 `MagicMirror` in your home folder; if yours lives elsewhere, change that part of the path.
@@ -724,12 +724,12 @@ same window.
 
 You can delete the app package afterwards; the module only needs `catalog-local/`.
 
-## Update
+## Update: refresh the local catalog after a new app version
 
 Bring! updates its catalog with new app versions. To follow, get the current app package again (Android or iOS,
 as above) and repeat the *Import*. The new catalog replaces the old one.
 
-## Remove
+## Remove: delete the local catalog and go back to the web catalog
 
 To go back to the web catalog, run this in the module folder (Windows: `cd ~\MagicMirror\modules\MMM-Bring`
 first). The answer is `local catalog removed …`:
